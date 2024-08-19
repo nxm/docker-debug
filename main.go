@@ -13,6 +13,7 @@ import (
 
 func main() {
 	fullDetails := flag.Bool("full", false, "Display full container details including GraphDriver, Node, SizeRw, and SizeRootFs")
+	json := flag.Bool("json", false, "Display json container details")
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
@@ -30,12 +31,17 @@ func main() {
 
 	cli.NegotiateAPIVersion(context.Background())
 
-	container, err := cli.ContainerInspect(context.Background(), id)
+	container, rawData, err := cli.ContainerInspectWithRaw(context.Background(), id, false)
 	if err != nil {
 		log.Fatalf("Docker inspect for '%s' failed: %v", id, err)
 	}
 
-	printContainerDetails(container, *fullDetails)
+	if *json {
+		fmt.Println(string(rawData))
+	} else {
+		printContainerDetails(container, *fullDetails)
+	}
+
 }
 
 func printContainerDetails(container types.ContainerJSON, fullDetails bool) {
