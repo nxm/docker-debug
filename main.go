@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/moby/moby/client"
 	"log"
 	"os"
@@ -111,14 +112,32 @@ func handleUsageCommand(args []string) {
 	defer cli.Close()
 
 	cli.NegotiateAPIVersion(context.Background())
+	if id == "all" {
+		containers, err := cli.ContainerList(context.Background(), container.ListOptions{})
+		if err != nil {
+			log.Fatalf("failed to list containers: %v", err)
+			return
+		}
 
-	container, _, err := cli.ContainerInspectWithRaw(context.Background(), id, false)
-	if err != nil {
-		log.Fatalf("docker inspect for '%s' failed: %v", id, err)
+		for _, container := range containers {
+			fmt.Printf("\nUsage for container %s:\n", container.ID)
+			ct, _, err := cli.ContainerInspectWithRaw(context.Background(), container.ID, false)
+			if err != nil {
+				log.Fatalf("docker inspect for '%s' failed: %v", id, err)
+			}
+			fmt.Printf("Container Name: %s\n", ct.Name)
+			getProcessUsage(int32(ct.State.Pid))
+		}
+	} else {
+		container, _, err := cli.ContainerInspectWithRaw(context.Background(), id, false)
+		if err != nil {
+			log.Fatalf("docker inspect for '%s' failed: %v", id, err)
+		}
+
+		fmt.Println("Usage:")
+		fmt.Printf("Container Name: %s\n", container.Name)
+		getProcessUsage(int32(container.State.Pid))
 	}
-
-	fmt.Println("Usage:")
-	getProcessUsage(int32(container.State.Pid))
 }
 
 func handleJsonCommand(args []string) {
