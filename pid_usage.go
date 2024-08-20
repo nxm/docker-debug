@@ -23,32 +23,32 @@ func millisecondsToHHMMSS(ms int64) string {
 func getProcessUsage(pid int32) {
 	p, err := process.NewProcess(pid)
 	if err != nil {
-		log.Fatalf("Failed to create process: %v", err)
+		log.Fatalf("failed to create process: %v", err)
 	}
 
 	cpuPercent, err := p.CPUPercent()
 	if err != nil {
-		log.Fatalf("Failed to get CPU usage: %v", err)
+		log.Fatalf("failed to get CPU usage: %v", err)
 	}
 
 	memInfo, err := p.MemoryInfo()
 	if err != nil {
-		log.Fatalf("Failed to get memory usage: %v", err)
+		log.Fatalf("failed to get memory usage: %v", err)
 	}
 
 	memPercent, err := p.MemoryPercent()
 	if err != nil {
-		log.Fatalf("Failed to get memory percent: %v", err)
+		log.Fatalf("failed to get memory percent: %v", err)
 	}
 
 	numThreads, err := p.NumThreads()
 	if err != nil {
-		log.Fatalf("Failed to get number of threads: %v", err)
+		log.Fatalf("failed to get number of threads: %v", err)
 	}
 
 	createTime, err := p.CreateTime()
 	if err != nil {
-		log.Fatalf("Failed to get process create time: %v", err)
+		log.Fatalf("failed to get process create time: %v", err)
 	}
 
 	uptimeMs := time.Now().UnixMilli() - createTime

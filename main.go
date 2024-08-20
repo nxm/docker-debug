@@ -78,7 +78,7 @@ func handleInspectCommand(args []string) {
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
-		log.Fatalf("Failed to create Docker client: %v", err)
+		log.Fatalf("failed to create Docker client: %v", err)
 	}
 	defer cli.Close()
 
@@ -86,7 +86,7 @@ func handleInspectCommand(args []string) {
 
 	container, _, err := cli.ContainerInspectWithRaw(context.Background(), id, false)
 	if err != nil {
-		log.Fatalf("Docker inspect for '%s' failed: %v", id, err)
+		log.Fatalf("docker inspect for '%s' failed: %v", id, err)
 	}
 
 	printContainerDetails(container, fullDetails)
@@ -110,7 +110,7 @@ func handleUsageCommand(args []string) {
 
 	container, _, err := cli.ContainerInspectWithRaw(context.Background(), id, false)
 	if err != nil {
-		log.Fatalf("Docker inspect for '%s' failed: %v", id, err)
+		log.Fatalf("docker inspect for '%s' failed: %v", id, err)
 	}
 
 	fmt.Println("Usage:")
@@ -127,7 +127,7 @@ func handleJsonCommand(args []string) {
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
-		log.Fatalf("Failed to create Docker client: %v", err)
+		log.Fatalf("failed to create Docker client: %v", err)
 	}
 	defer cli.Close()
 
@@ -135,7 +135,7 @@ func handleJsonCommand(args []string) {
 
 	_, rawData, err := cli.ContainerInspectWithRaw(context.Background(), id, false)
 	if err != nil {
-		log.Fatalf("Docker inspect for '%s' failed: %v", id, err)
+		log.Fatalf("docker inspect for '%s' failed: %v", id, err)
 	}
 
 	fmt.Println(string(rawData))
