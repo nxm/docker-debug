@@ -2,26 +2,79 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
-	"log"
-	"os"
-
 	"github.com/docker/docker/api/types"
 	"github.com/moby/moby/client"
+	"log"
+	"os"
 )
 
-func main() {
-	fullDetails := flag.Bool("full", false, "Display full container details including GraphDriver, Node, SizeRw, and SizeRootFs")
-	json := flag.Bool("json", false, "Display json container details")
-	flag.Parse()
+type Command struct {
+	Name        string
+	Description string
+	Parameters  string
+	Execute     func(args []string)
+}
 
-	if len(flag.Args()) < 1 {
-		fmt.Printf("USAGE: %s [--full] CONTAINER-ID\n", os.Args[0])
+const ContainerId = "CONTAINER-ID"
+
+func main() {
+	var commands []Command
+	commands = []Command{
+		{
+			Name:        "inspect",
+			Description: "Display container details. Use --full for more information.",
+			Parameters:  fmt.Sprintf("%s [--full]", ContainerId),
+			Execute:     handleInspectCommand,
+		},
+		{
+			Name:        "usage",
+			Description: "Display process usage statistics for a container.",
+			Parameters:  ContainerId,
+			Execute:     handleUsageCommand,
+		},
+		{
+			Name:        "json",
+			Description: "Display container details in JSON format.",
+			Parameters:  ContainerId,
+			Execute:     handleJsonCommand,
+		},
+		{
+			Name:        "help",
+			Description: "Display this help message.",
+			Parameters:  "",
+			Execute:     func(args []string) { printHelp(commands) },
+		},
+	}
+
+	if len(os.Args) < 2 {
+		printHelp(commands)
 		os.Exit(1)
 	}
 
-	id := flag.Arg(0)
+	commandName := os.Args[1]
+	args := os.Args[2:]
+
+	for _, cmd := range commands {
+		if cmd.Name == commandName {
+			cmd.Execute(args)
+			return
+		}
+	}
+
+	fmt.Printf("Unknown command: %s\n", commandName)
+	printHelp(commands)
+	os.Exit(1)
+}
+
+func handleInspectCommand(args []string) {
+	if len(args) < 1 {
+		fmt.Println("USAGE: inspect CONTAINER-ID [--full]")
+		os.Exit(1)
+	}
+
+	id := args[0]
+	fullDetails := len(args) > 1 && args[1] == "--full"
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -31,17 +84,68 @@ func main() {
 
 	cli.NegotiateAPIVersion(context.Background())
 
-	container, rawData, err := cli.ContainerInspectWithRaw(context.Background(), id, false)
+	container, _, err := cli.ContainerInspectWithRaw(context.Background(), id, false)
 	if err != nil {
 		log.Fatalf("Docker inspect for '%s' failed: %v", id, err)
 	}
 
-	if *json {
-		fmt.Println(string(rawData))
-	} else {
-		printContainerDetails(container, *fullDetails)
+	printContainerDetails(container, fullDetails)
+}
+
+func handleUsageCommand(args []string) {
+	if len(args) < 1 {
+		fmt.Println("USAGE: usage CONTAINER-ID")
+		os.Exit(1)
 	}
 
+	id := args[0]
+
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		log.Fatalf("Failed to create Docker client: %v", err)
+	}
+	defer cli.Close()
+
+	cli.NegotiateAPIVersion(context.Background())
+
+	container, _, err := cli.ContainerInspectWithRaw(context.Background(), id, false)
+	if err != nil {
+		log.Fatalf("Docker inspect for '%s' failed: %v", id, err)
+	}
+
+	fmt.Println("Usage:")
+	getProcessUsage(int32(container.State.Pid))
+}
+
+func handleJsonCommand(args []string) {
+	if len(args) < 1 {
+		fmt.Println("USAGE: json CONTAINER-ID")
+		os.Exit(1)
+	}
+
+	id := args[0]
+
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		log.Fatalf("Failed to create Docker client: %v", err)
+	}
+	defer cli.Close()
+
+	cli.NegotiateAPIVersion(context.Background())
+
+	_, rawData, err := cli.ContainerInspectWithRaw(context.Background(), id, false)
+	if err != nil {
+		log.Fatalf("Docker inspect for '%s' failed: %v", id, err)
+	}
+
+	fmt.Println(string(rawData))
+}
+
+func printHelp(commands []Command) {
+	fmt.Println("USAGE:")
+	for _, cmd := range commands {
+		fmt.Printf("  %s %s - %s\n", cmd.Name, cmd.Parameters, cmd.Description)
+	}
 }
 
 func printContainerDetails(container types.ContainerJSON, fullDetails bool) {
