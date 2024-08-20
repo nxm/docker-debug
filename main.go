@@ -9,11 +9,13 @@ import (
 	"os"
 )
 
+type Handler func(args []string)
+
 type Command struct {
 	Name        string
 	Description string
 	Parameters  string
-	Execute     func(args []string)
+	Execute     Handler
 }
 
 const ContainerId = "CONTAINER-ID"
@@ -43,7 +45,9 @@ func main() {
 			Name:        "help",
 			Description: "Display this help message.",
 			Parameters:  "",
-			Execute:     func(args []string) { printHelp(commands) },
+			Execute: func(args []string) {
+				printHelp(commands)
+			},
 		},
 	}
 
